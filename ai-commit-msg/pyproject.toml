@@ -1,0 +1,22 @@
+[project]
+name = "ai-commit-msg"
+version = "0.1.0"
+description = "LangGraph prepare-commit-msg generator (Conventional Commits)"
+requires-python = ">=3.10"
+dependencies = [
+    "langgraph>=0.2",
+    "langchain-openai>=0.2",
+    "langchain-google-genai>=4.0",
+    "langchain-anthropic >= 1.5.0",
+    "pydantic>=2",
+]
+
+[project.scripts]
+ai-commit-msg = "committer.main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["committer"]

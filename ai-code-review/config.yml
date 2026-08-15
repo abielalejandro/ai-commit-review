@@ -1,0 +1,18 @@
+# Config del revisor, por repo. Todo es opcional (estos son los defaults).
+language: java          # fija el lenguaje; si lo omitís, se detecta por extensión
+framework: spring-boot  # contexto extra para los prompts
+
+provider: openai
+model: gpt-3.5-turbo
+
+review:                 # qué reviewers corren (en paralelo)
+  security: true
+  bugs: true
+  architecture: true
+  performance: false
+
+blocking:               # cuáles pueden abortar el commit (REJECT); el resto es advisory
+  security: true
+  bugs: true
+  architecture: false
+  performance: false
