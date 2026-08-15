@@ -66,6 +66,8 @@ Así ponés tus preferencias una vez a nivel global y cada repo solo overridea l
 ```yaml
 language: java          # omitir = autodetección por extensión
 framework: spring-boot
+provider: openai
+model: gtp-4
 review:                 # qué corre (en paralelo)
   security: true
   bugs: true

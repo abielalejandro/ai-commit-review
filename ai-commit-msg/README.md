@@ -30,6 +30,21 @@ Instalar en un repo:
 ln -sf "$(pwd)/scripts/prepare-commit-msg" .git/hooks/prepare-commit-msg
 ```
 
+## Config por repo (`.ai-commig-msg.yml`)
+
+Opcional. Controla qué reviewers corren y cuáles bloquean.
+
+**Cascada** (el de más abajo pisa al de arriba, por clave):
+1. global del usuario → `~/.config/ai-commig-msg/config.yml` (respeta `XDG_CONFIG_HOME`)
+2. `.ai-commig-msg.yml` en la raíz del repo
+
+Así ponés tus preferencias una vez a nivel global y cada repo solo overridea lo que difiere.
+
+```yaml
+provider: openai
+model: gtp-4
+```
+
 ## Config (env vars)
 
 | Var | Default | Qué es |
