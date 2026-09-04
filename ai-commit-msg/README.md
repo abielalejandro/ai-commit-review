@@ -15,7 +15,7 @@ read_diff → draft → (mensaje a stdout)
 
 ```bash
 pip install .          # o: pipx install .   /   pip install git+https://github.com/USER/ai-commit-msg
-export OPENAI_API_KEY=sk-...
+export DEEPSEEK_API_KEY=sk-...
 ```
 
 Genera el comando `ai-commit-msg`, que imprime el mensaje sugerido a stdout.
@@ -41,14 +41,16 @@ Opcional. Controla qué reviewers corren y cuáles bloquean.
 Así ponés tus preferencias una vez a nivel global y cada repo solo overridea lo que difiere.
 
 ```yaml
-provider: openai
-model: gtp-4
+provider: deepseek
+model: deepseek-chat
 ```
 
 ## Config (env vars)
 
 | Var | Default | Qué es |
 |-----|---------|--------|
-| `OPENAI_API_KEY` | — | requerido |
+| `OPENAI_API_KEY` | — | requerido para `provider: openai` |
+| `DEEPSEEK_API_KEY` | — | requerido para `provider: deepseek` |
+| `GROQ_API_KEY` | — | requerido para `provider: groq` |
 | `OPENAI_BASE_URL` | `(OpenAI por defecto)` | endpoint OpenAI-compatible |
 | `COMMIT_MODEL` | `gpt-4o-mini` | modelo |

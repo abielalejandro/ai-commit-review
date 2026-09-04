@@ -7,7 +7,7 @@
 
 # Si el comando no está instalado o no hay API key, no molestar.
 command -v ai-commit-msg >/dev/null 2>&1 || exit 0
-[ -z "${OPENAI_API_KEY:-}" ] && exit 0
+[ -z "${OPENAI_API_KEY:-}" ] && [ -z "${DEEPSEEK_API_KEY:-}" ] && exit 0
 
 MESSAGE=$(ai-commit-msg 2>/dev/null | head -c 4000 || true)
 [ -z "$MESSAGE" ] && { echo "⚠️  Sin sugerencia de IA; se deja el mensaje por defecto." >&2; exit 0; }

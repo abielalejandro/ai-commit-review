@@ -170,6 +170,34 @@ class OpenAiCodeCodeReviewer(LlmCodeReviewer):
         )
 
 
+class DeepSeekCodeReviewer(LlmCodeReviewer):
+
+    def __init__(self, config: AppConfig):
+        self.config = config
+
+    @cached_property
+    def llm(self) -> ChatOpenAI:
+        return ChatOpenAI(
+            model=self.config.model or "deepseek-chat",
+            api_key=os.environ["DEEPSEEK_API_KEY"],
+            base_url="https://api.deepseek.com",
+            temperature=0,
+        )
+
+class GroqCodeReviewer(LlmCodeReviewer):
+
+    def __init__(self, config: AppConfig):
+        self.config = config
+
+    @cached_property
+    def llm(self) -> ChatOpenAI:
+        return ChatOpenAI(
+            model=self.config.model or "qwen/qwen3.6-27b",
+            api_key=os.environ["GROQ_API_KEY"],
+            base_url="https://api.groq.com/openai/v1",
+            temperature=0,
+        )
+
 class GeminiCodeReviewer(LlmCodeReviewer):
     def __init__(self, config: AppConfig):
         self.config = config

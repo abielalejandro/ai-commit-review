@@ -1,5 +1,5 @@
 #!/bin/sh
 # Instalar en un repo:  ln -sf "$(pwd)/scripts/pre-commit" .git/hooks/pre-commit
-# Requiere OPENAI_API_KEY en el entorno.
+# Requiere la API key del provider configurado en el entorno.
 ai-review
 exit $?

@@ -2,8 +2,8 @@
 language: java          # fija el lenguaje; si lo omitís, se detecta por extensión
 framework: spring-boot  # contexto extra para los prompts
 
-provider: openai
-model: gpt-3.5-turbo
+provider: deepseek
+model: deepseek-chat
 
 review:                 # qué reviewers corren (en paralelo)
   security: true

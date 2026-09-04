@@ -60,6 +60,20 @@ class LlmCodeReviewer(CodeReviewer):
         return self.llm.with_structured_output(CommitMessage).invoke(messages)
 
 
+class GroqCodeReviewer(LlmCodeReviewer):
+
+    def __init__(self, config: AppConfig):
+        self.config = config
+
+    @cached_property
+    def llm(self) -> ChatOpenAI:
+        return ChatOpenAI(
+            model=self.config.model or "qwen/qwen3.6-27b",
+            api_key=os.environ["GROQ_API_KEY"],
+            base_url="https://api.groq.com/openai/v1",
+            temperature=0,
+        )
+
 class ClaudeCliCodeReviewer(CodeReviewer):
     """No langchain model: shells out to the `claude` CLI and parses its JSON."""
 
@@ -163,6 +177,21 @@ class OpenAiCodeCodeReviewer(LlmCodeReviewer):
         return ChatOpenAI(
             model=self.config.model,
             api_key=os.environ["OPENAI_API_KEY"],
+            temperature=0,
+        )
+
+
+class DeepSeekCodeReviewer(LlmCodeReviewer):
+
+    def __init__(self, config: AppConfig):
+        self.config = config
+
+    @cached_property
+    def llm(self) -> ChatOpenAI:
+        return ChatOpenAI(
+            model=self.config.model or "deepseek-chat",
+            api_key=os.environ["DEEPSEEK_API_KEY"],
+            base_url="https://api.deepseek.com",
             temperature=0,
         )
 

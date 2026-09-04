@@ -35,7 +35,7 @@ pip install -e .                                # editable, para desarrollo
 Después:
 
 ```bash
-export OPENAI_API_KEY=sk-...
+export DEEPSEEK_API_KEY=sk-...
 ai-review        # revisa el diff staged del repo actual
 ```
 
@@ -66,8 +66,8 @@ Así ponés tus preferencias una vez a nivel global y cada repo solo overridea l
 ```yaml
 language: java          # omitir = autodetección por extensión
 framework: spring-boot
-provider: openai
-model: gtp-4
+provider: deepseek
+model: deepseek-chat
 review:                 # qué corre (en paralelo)
   security: true
   bugs: true
@@ -88,11 +88,14 @@ el fan-in — así el nº de ramas paralelas es dinámico.
 
 | Var | Default | Qué es |
 |-----|---------|--------|
-| `OPENAI_API_KEY` | — | requerido |
+| `OPENAI_API_KEY` | — | requerido para `provider: openai` |
+| `DEEPSEEK_API_KEY` | — | requerido para `provider: deepseek` |
 | `OPENAI_BASE_URL` | `(OpenAI por defecto)` | cambiá a otro endpoint OpenAI-compatible |
+| `GROQ_API_KEY` | — | requerido para `provider: groq` |
 | `REVIEW_MODEL` | `gpt-4o-mini` | modelo |
 
-Otro proveedor OpenAI-compatible (ej. DeepSeek): `OPENAI_BASE_URL=https://api.deepseek.com`, `REVIEW_MODEL=deepseek-chat`, y poné esa key en `OPENAI_API_KEY`.
+DeepSeek usa la API compatible con OpenAI vía `provider: deepseek`, `model: deepseek-chat`
+y `DEEPSEEK_API_KEY`.
 
 ## Prueba manual
 

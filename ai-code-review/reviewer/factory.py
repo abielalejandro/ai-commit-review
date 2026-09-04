@@ -1,6 +1,6 @@
 from reviewer.config import AppConfig
 from reviewer.reviewers import ClaudeCliCodeReviewer, AnthropicCodeReviewer, GeminiCodeReviewer, OpenAiCodeCodeReviewer, \
-    CodexCliCodeReviewer, AgyCliCodeReviewer, CodeReviewer
+    CodexCliCodeReviewer, AgyCliCodeReviewer, DeepSeekCodeReviewer, CodeReviewer, GroqCodeReviewer
 
 
 def create_reviewer(config: AppConfig) -> CodeReviewer:
@@ -24,12 +24,20 @@ def create_reviewer(config: AppConfig) -> CodeReviewer:
             return OpenAiCodeCodeReviewer(
                 config
             )
+        case "deepseek":
+            return DeepSeekCodeReviewer(
+                config
+            )
         case "codex":
             return CodexCliCodeReviewer(
                 config
             )
         case "agy":
             return AgyCliCodeReviewer(
+                config
+            )
+        case "groq":
+            return GroqCodeReviewer(
                 config
             )
         case _:
