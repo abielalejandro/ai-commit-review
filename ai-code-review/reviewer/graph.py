@@ -2,7 +2,7 @@ from langgraph.graph import END, START, StateGraph
 
 from .config import blocking, enabled, load_config
 from .factory import create_reviewer
-from .nodes import make_classify, make_decide, make_reviewer, read_diff
+from .nodes import make_classify, make_decide, make_read_diff, make_reviewer
 from .state import ReviewState
 
 
@@ -12,7 +12,7 @@ def build_graph(cfg: dict | None = None):
 
     reviewer = create_reviewer(cfg)
     g = StateGraph(ReviewState)
-    g.add_node("read_diff", read_diff)
+    g.add_node("read_diff", make_read_diff(cfg))
     g.add_node("classify", make_classify(cfg))
     g.add_node("decide", make_decide(blocking(cfg)))
 

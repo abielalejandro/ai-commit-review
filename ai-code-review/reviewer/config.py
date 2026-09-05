@@ -23,6 +23,8 @@ class AppConfig(BaseModel):
     model: str | None = None
     review: ReviewOptions = Field(default_factory=ReviewOptions)
     blocking: BlockingOptions = Field(default_factory=BlockingOptions)
+    ignore: list[str] = Field(default_factory=list)
+    allow_ignore: bool = False
 
 CONCERNS = ("security", "bugs", "architecture", "performance")
 
@@ -33,6 +35,8 @@ DEFAULTS = {
     "model": None,
     "review":   {"security": True, "bugs": True, "architecture": True, "performance": False},
     "blocking": {"security": True, "bugs": True, "architecture": False, "performance": False},
+    "ignore": [],
+    "allow_ignore": False,
 }
 
 # What each reviewer hunts for. Keyed by concern.
