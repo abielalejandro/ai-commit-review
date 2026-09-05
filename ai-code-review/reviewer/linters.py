@@ -34,7 +34,8 @@ class Linter(ABC):
 
 
 class CheckstyleLinter(Linter):
-    cmd = ("checkstyle", "-f", "xml")
+    # ponytail: bundled google_checks as default config; custom config path/override is a follow-up.
+    cmd = ("checkstyle", "-c", "/google_checks.xml", "-f", "xml")
 
     def parse(self, out: str) -> list[Finding]:
         findings: list[Finding] = []

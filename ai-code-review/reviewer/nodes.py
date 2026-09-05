@@ -8,6 +8,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from reviewer.reviewers import CodeReviewer
 from reviewer.linters import REGISTRY
+from reviewer.scanners import SCANNER_REGISTRY
 from .config import PROMPTS, AppConfig
 from .models import Finding
 from .state import ReviewState
@@ -270,6 +271,28 @@ def make_linter(cfg: AppConfig):
     return node
 
 
+def make_scanner(cfg: AppConfig, concern: str):
+    """Runs a deterministic repo-level scanner (dependencies/secrets). Fails open."""
+    def node(state: ReviewState) -> ReviewState:
+        tool = getattr(cfg.scanners, concern, None)
+        if not tool or tool == "none":
+            return {"reviews": {concern: []}}
+        scanner = SCANNER_REGISTRY.get(tool)
+        if scanner is None:
+            print(f"[ai-review] {concern}: scanner '{tool}' desconocido, se saltea", file=sys.stderr)
+            return {"reviews": {concern: []}}
+        try:
+            findings = scanner.run(Path.cwd())
+        except FileNotFoundError as e:
+            print(f"[ai-review] {concern}: '{tool}' no instalado, se saltea: {e}", file=sys.stderr)
+            return {"reviews": {concern: []}}
+        except Exception as e:  # fail-open: a broken scanner must not block every commit
+            print(f"[ai-review] {concern} skipped: {e}", file=sys.stderr)
+            return {"reviews": {concern: []}}
+        return {"reviews": {concern: findings}}
+    return node
+
+
 def make_classify(cfg: AppConfig):
     """Config language/framework wins; else detect by extension."""
     def classify(state: ReviewState) -> ReviewState:
@@ -387,4 +410,17 @@ if __name__ == "__main__":
     assert ruff[0].severity == "high" and "F401" in ruff[0].message
     cs = CheckstyleLinter().parse('<checkstyle><file name="A.java"><error line="1" severity="warning" message="x" source="com.puppycrawl"/></file></checkstyle>')
     assert cs == [Finding(severity="medium", message="com.puppycrawl (line 1): x")]
+
+    # scanners: osv-scanner + gitleaks output parsing (no subprocess)
+    from reviewer.scanners import OsvScanner, GitleaksScanner
+    osv = OsvScanner().parse(
+        '{"results": [{"source": {"path": "package-lock.json"}, "packages": [{"package": '
+        '{"name": "lodash", "version": "4.17.15"}, "vulnerabilities": [{"id": "GHSA-xxxx", '
+        '"summary": "prototype pollution", "database_specific": {"severity": "HIGH"}}]}]}]}'
+    )
+    assert osv[0].severity == "high" and "lodash@4.17.15" in osv[0].message
+    gl = GitleaksScanner().parse(
+        '[{"RuleID": "aws-access-token", "File": "app.py", "StartLine": 5, "Description": "AWS key"}]'
+    )
+    assert gl == [Finding(severity="high", message="aws-access-token (app.py:5): AWS key")]
     print("nodes OK")

@@ -2,7 +2,7 @@ from langgraph.graph import END, START, StateGraph
 
 from .config import blocking, enabled, load_config
 from .factory import create_reviewer
-from .nodes import make_classify, make_decide, make_linter, make_read_diff, make_reviewer
+from .nodes import make_classify, make_decide, make_linter, make_read_diff, make_reviewer, make_scanner
 from .state import ReviewState
 
 
@@ -20,7 +20,12 @@ def build_graph(cfg: dict | None = None):
     g.add_edge("read_diff", "classify")
     # Fan-out to each enabled concern (parallel), fan-in to the deterministic decide node.
     for c in concerns:
-        node = make_linter(cfg) if c == "style" else make_reviewer(c, reviewer)
+        if c == "style":
+            node = make_linter(cfg)
+        elif c in ("dependencies", "secrets"):
+            node = make_scanner(cfg, c)
+        else:
+            node = make_reviewer(c, reviewer)
         g.add_node(c, node)
         g.add_edge("classify", c)
         g.add_edge(c, "decide")

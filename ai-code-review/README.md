@@ -75,12 +75,22 @@ review:                 # qué corre (en paralelo)
   architecture: true
   performance: false
   style: false           # linter determinístico por lenguaje (opt-in)
+  maintainability: false
+  testing: false
+  best_practices: false
+  dependencies: false    # osv-scanner (CVEs en dependencias)
+  secrets: false         # gitleaks (secretos hardcodeados)
 blocking:               # cuáles abortan el commit; el resto es advisory
   security: true
   bugs: true
   architecture: false
   performance: false
   style: false
+  maintainability: false
+  testing: false
+  best_practices: false
+  dependencies: false
+  secrets: false
 
 ignore:                 # archivos/dirs que el reviewer nunca analiza (globs tipo .gitignore)
   - "**/*.min.js"
@@ -96,11 +106,30 @@ linters:                # qué linter corre por lenguaje (defaults; "none" = des
   go: golangci-lint
   python: ruff
   csharp: dotnet-format
+
+scanners:               # qué scanner corre por concern determinístico ("none" = deshabilita)
+  dependencies: osv-scanner
+  secrets: gitleaks
 ```
 
 Un concern `blocking: true` pero `review: false` no bloquea (no corre). Los reviewers
 habilitados escriben a `reviews[concern]` y un **reducer** (`merge_reviews`) los junta en
 el fan-in — así el nº de ramas paralelas es dinámico.
+
+### Concerns disponibles
+
+| Concern | Tipo | Qué caza |
+|---------|------|----------|
+| `security` | LLM | secretos, inyección, authz, deserialización insegura, path traversal |
+| `bugs` | LLM | null/None, leaks, races de concurrencia, manejo de errores, off-by-one |
+| `architecture` | LLM | layering, acoplamiento, abstracciones con fugas |
+| `performance` | LLM | N+1, alocaciones, I/O bloqueante, complejidad |
+| `maintainability` | LLM | complejidad, duplicación, código muerto, naming |
+| `testing` | LLM | cambios sin test, tests débiles, casos borde |
+| `best_practices` | LLM | no-idiomático, APIs deprecadas, anti-patterns del framework |
+| `style` | determinístico | linter por lenguaje (ver abajo) |
+| `dependencies` | determinístico | CVEs en dependencias (`osv-scanner`) |
+| `secrets` | determinístico | secretos hardcodeados (`gitleaks`) |
 
 ## Ignorar código
 
@@ -295,6 +324,39 @@ Requiere el SDK de .NET:
 dotnet format --version
 ```
 Ya viene con el SDK; no hace falta instalar nada extra.
+
+## Scanners determinísticos (concerns `dependencies` y `secrets`)
+
+Además del linter, hay dos nodos determinísticos que corren scanners reales a nivel repo.
+
+| Concern | Tool default | Qué caza | Alcance |
+|---------|--------------|----------|---------|
+| `dependencies` | `osv-scanner` | CVEs en dependencias (lee lockfiles) | repo completo |
+| `secrets` | `gitleaks` | secretos hardcodeados | solo staged |
+
+```yaml
+review:
+  dependencies: true
+  secrets: true
+scanners:
+  dependencies: osv-scanner   # "none" = deshabilita
+  secrets: gitleaks
+```
+
+Instalación:
+
+```bash
+# osv-scanner (CVEs)
+brew install osv-scanner                                    # macOS
+go install github.com/google/osv-scanner/cmd/osv-scanner@latest   # vía Go
+
+# gitleaks (secretos)
+brew install gitleaks                                       # macOS
+go install github.com/zricethezav/gitleaks/v8@latest        # vía Go
+```
+
+Ambos son fail-open: si el tool no está instalado, se saltean con warning en stderr.
+Severidad: osv-scanner `CRITICAL/HIGH→high`, `MEDIUM/MODERATE→medium`, `LOW→low`; gitleaks toda fuga → `high`.
 
 ## Config (env vars)
 

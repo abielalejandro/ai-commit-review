@@ -11,6 +11,11 @@ review:                 # qué reviewers corren (en paralelo)
   architecture: true
   performance: false
   style: false           # linter determinístico por lenguaje (opt-in)
+  maintainability: false
+  testing: false
+  best_practices: false
+  dependencies: false    # osv-scanner (CVEs en dependencias)
+  secrets: false         # gitleaks (secretos hardcodeados)
 
 blocking:               # cuáles pueden abortar el commit (REJECT); el resto es advisory
   security: true
@@ -18,6 +23,11 @@ blocking:               # cuáles pueden abortar el commit (REJECT); el resto es
   architecture: false
   performance: false
   style: false
+  maintainability: false
+  testing: false
+  best_practices: false
+  dependencies: false
+  secrets: false
 
 linters:                # qué linter corre por lenguaje (defaults recomendados; "none" = deshabilita)
   java: checkstyle
@@ -26,3 +36,7 @@ linters:                # qué linter corre por lenguaje (defaults recomendados;
   go: golangci-lint
   python: ruff
   csharp: dotnet-format
+
+scanners:               # qué scanner corre por concern determinístico ("none" = deshabilita)
+  dependencies: osv-scanner
+  secrets: gitleaks

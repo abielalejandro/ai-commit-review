@@ -11,18 +11,33 @@ graph TD;
 	security(security)
 	bugs(bugs)
 	architecture(architecture)
+	maintainability(maintainability)
+	testing(testing)
+	best_practices(best_practices)
 	style(style)
+	dependencies(dependencies)
+	secrets(secrets)
 	__end__([<p>__end__</p>]):::last
 	__start__ --> read_diff;
 	architecture --> decide;
+	best_practices --> decide;
 	bugs --> decide;
 	classify --> architecture;
+	classify --> best_practices;
 	classify --> bugs;
+	classify --> dependencies;
+	classify --> maintainability;
+	classify --> secrets;
 	classify --> security;
 	classify --> style;
+	classify --> testing;
+	dependencies --> decide;
+	maintainability --> decide;
 	read_diff --> classify;
+	secrets --> decide;
 	security --> decide;
 	style --> decide;
+	testing --> decide;
 	decide --> __end__;
 	classDef default fill:#f2f0ff,line-height:1.2
 	classDef first fill-opacity:0
