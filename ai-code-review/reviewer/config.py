@@ -8,12 +8,22 @@ class BlockingOptions(BaseModel):
     bugs: bool = True
     architecture: bool = True
     performance: bool = True
+    style: bool = False
 
 class ReviewOptions(BaseModel):
     security: bool = True
     bugs: bool = True
     architecture: bool = True
     performance: bool = True
+    style: bool = False
+
+class LinterOptions(BaseModel):
+    java: str = "checkstyle"
+    javascript: str = "eslint"
+    typescript: str = "eslint"
+    go: str = "golangci-lint"
+    python: str = "ruff"
+    csharp: str = "dotnet-format"
 
 
 class AppConfig(BaseModel):
@@ -25,18 +35,21 @@ class AppConfig(BaseModel):
     blocking: BlockingOptions = Field(default_factory=BlockingOptions)
     ignore: list[str] = Field(default_factory=list)
     allow_ignore: bool = False
+    linters: LinterOptions = Field(default_factory=LinterOptions)
 
-CONCERNS = ("security", "bugs", "architecture", "performance")
+CONCERNS = ("security", "bugs", "architecture", "performance", "style")
 
 DEFAULTS = {
     "language": None,
     "framework": None,
     "provider": "openai",
     "model": None,
-    "review":   {"security": True, "bugs": True, "architecture": True, "performance": False},
-    "blocking": {"security": True, "bugs": True, "architecture": False, "performance": False},
+    "review":   {"security": True, "bugs": True, "architecture": True, "performance": False, "style": False},
+    "blocking": {"security": True, "bugs": True, "architecture": False, "performance": False, "style": False},
     "ignore": [],
     "allow_ignore": False,
+    "linters": {"java": "checkstyle", "javascript": "eslint", "typescript": "eslint",
+                "go": "golangci-lint", "python": "ruff", "csharp": "dotnet-format"},
 }
 
 # What each reviewer hunts for. Keyed by concern.

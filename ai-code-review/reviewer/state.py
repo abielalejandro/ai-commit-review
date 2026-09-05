@@ -7,7 +7,8 @@ def merge_reviews(a: dict, b: dict) -> dict:
 
 
 class ReviewState(TypedDict, total=False):
-    diff: str                                            # staged diff (capped)
+    diff: str                                            # staged diff (full, uncapped)
+    files: list[str]                                     # staged files (SENSITIVE/ignore filtered)
     language: str                                        # classify() hint for each reviewer
     reviews: Annotated[dict[str, list], merge_reviews]   # concern -> list[Finding], parallel-merged
     verdict: Literal["PASS", "REJECT"]

@@ -11,6 +11,7 @@ graph TD;
 	security(security)
 	bugs(bugs)
 	architecture(architecture)
+	style(style)
 	__end__([<p>__end__</p>]):::last
 	__start__ --> read_diff;
 	architecture --> decide;
@@ -18,8 +19,10 @@ graph TD;
 	classify --> architecture;
 	classify --> bugs;
 	classify --> security;
+	classify --> style;
 	read_diff --> classify;
 	security --> decide;
+	style --> decide;
 	decide --> __end__;
 	classDef default fill:#f2f0ff,line-height:1.2
 	classDef first fill-opacity:0

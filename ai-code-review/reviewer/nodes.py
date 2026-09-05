@@ -7,6 +7,7 @@ from pathlib import Path
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from reviewer.reviewers import CodeReviewer
+from reviewer.linters import REGISTRY
 from .config import PROMPTS, AppConfig
 from .models import Finding
 from .state import ReviewState
@@ -16,6 +17,13 @@ LANG_BY_EXT = {
     ".java": "Java", ".cs": ".NET/C#", ".csproj": ".NET/C#", ".vb": ".NET/VB",
     ".ts": "TypeScript", ".tsx": "TypeScript", ".py": "Python", ".go": "Go",
     ".php": "Php"
+}
+
+# extension -> linter language key (cfg.linters.<key> picks the tool)
+LINTER_BY_EXT = {
+    ".java": "java", ".js": "javascript", ".jsx": "javascript",
+    ".ts": "typescript", ".tsx": "typescript", ".go": "go",
+    ".py": "python", ".cs": "csharp",
 }
 
 # Never read nor send these to the LLM: secrets and project config of any kind.
@@ -86,7 +94,7 @@ def make_read_diff(cfg: AppConfig):
         ).stdout.split()
         files = [f for f in names if not SENSITIVE.search(f) and not _path_ignored(f, cfg.ignore)]
         if not files:
-            return {"diff": ""}
+            return {"diff": "", "files": []}
         diff = subprocess.run(
             ["git", "diff", "--cached", "--"] + files,
             capture_output=True, text=True, check=True,
@@ -95,7 +103,7 @@ def make_read_diff(cfg: AppConfig):
             diff, ignored = filter_ignored(diff)
             for path, snippet, reason in ignored:
                 print(f"[ai-review] ignored ({reason}): {path}: {snippet}", file=sys.stderr)
-        return {"diff": diff}
+        return {"diff": diff, "files": files}
     return read_diff
 
 
@@ -228,6 +236,40 @@ def chunk_diff(diff: str, max_chars: int) -> list[str]:
     return chunks
 
 
+def _group_by_lang(files: list[str]) -> dict[str, list[str]]:
+    grouped: dict[str, list[str]] = {}
+    for f in files:
+        lang = LINTER_BY_EXT.get(Path(f).suffix)
+        if lang:
+            grouped.setdefault(lang, []).append(f)
+    return grouped
+
+
+def make_linter(cfg: AppConfig):
+    """Runs the deterministic linter per language over the staged files. Fails open."""
+    def node(state: ReviewState) -> ReviewState:
+        files = state.get("files", [])
+        if not files:
+            return {"reviews": {"style": []}}
+        findings: list[Finding] = []
+        for lang, paths in _group_by_lang(files).items():
+            tool = getattr(cfg.linters, lang, None)
+            if not tool or tool == "none":
+                continue
+            linter = REGISTRY.get(tool)
+            if linter is None:
+                print(f"[ai-review] style ({lang}): linter '{tool}' desconocido, se saltea", file=sys.stderr)
+                continue
+            try:
+                findings.extend(linter.run(paths, Path.cwd()))
+            except FileNotFoundError as e:
+                print(f"[ai-review] style ({lang}): '{tool}' no instalado, se saltea: {e}", file=sys.stderr)
+            except Exception as e:  # fail-open: a broken linter must not block every commit
+                print(f"[ai-review] style ({lang}) skipped: {e}", file=sys.stderr)
+        return {"reviews": {"style": findings}}
+    return node
+
+
 def make_classify(cfg: AppConfig):
     """Config language/framework wins; else detect by extension."""
     def classify(state: ReviewState) -> ReviewState:
@@ -332,4 +374,17 @@ if __name__ == "__main__":
         assert SENSITIVE.search(path), path
     for path in ("src/app.py", "main.java", "util.ts", "server.go"):
         assert not SENSITIVE.search(path), path
+
+    # linters: file->language grouping + output parsing (no subprocess)
+    from reviewer.linters import EslintLinter, RuffLinter, CheckstyleLinter, map_severity
+    grouped = _group_by_lang(["a.py", "b.go", "c.ts", "d.java", "e.md"])
+    assert grouped == {"python": ["a.py"], "go": ["b.go"], "typescript": ["c.ts"], "java": ["d.java"]}
+    assert map_severity("error") == "high" and map_severity("warning") == "medium"
+    assert map_severity("info") == "low" and map_severity(None) == "medium"
+    esl = EslintLinter().parse('[{"filePath": "a.js", "messages": [{"ruleId": "no-eval", "severity": 2, "line": 3, "message": "eval is evil"}]}]')
+    assert esl == [Finding(severity="high", message="no-eval (a.js:3): eval is evil")]
+    ruff = RuffLinter().parse('[{"code": "F401", "filename": "a.py", "message": "unused import", "location": {"row": 1}}]')
+    assert ruff[0].severity == "high" and "F401" in ruff[0].message
+    cs = CheckstyleLinter().parse('<checkstyle><file name="A.java"><error line="1" severity="warning" message="x" source="com.puppycrawl"/></file></checkstyle>')
+    assert cs == [Finding(severity="medium", message="com.puppycrawl (line 1): x")]
     print("nodes OK")

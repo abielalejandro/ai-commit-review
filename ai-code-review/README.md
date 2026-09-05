@@ -74,11 +74,13 @@ review:                 # qué corre (en paralelo)
   bugs: true
   architecture: true
   performance: false
+  style: false           # linter determinístico por lenguaje (opt-in)
 blocking:               # cuáles abortan el commit; el resto es advisory
   security: true
   bugs: true
   architecture: false
   performance: false
+  style: false
 
 ignore:                 # archivos/dirs que el reviewer nunca analiza (globs tipo .gitignore)
   - "**/*.min.js"
@@ -86,6 +88,14 @@ ignore:                 # archivos/dirs que el reviewer nunca analiza (globs tip
   - "generated/"
 
 allow_ignore: true      # habilita los markers de ignore por línea/bloque (noqa, nolint, ...)
+
+linters:                # qué linter corre por lenguaje (defaults; "none" = deshabilita)
+  java: checkstyle
+  javascript: eslint
+  typescript: eslint
+  go: golangci-lint
+  python: ruff
+  csharp: dotnet-format
 ```
 
 Un concern `blocking: true` pero `review: false` no bloquea (no corre). Los reviewers
@@ -167,6 +177,124 @@ Comportamiento:
 
 > **Advertencia:** esto es un escape hatch intencional. No lo uses para silenciar hallazgos
 > reales. `@SuppressWarnings("...")` de Java no se soporta (es una anotación, no un comentario).
+
+## Linter por lenguaje (concern `style`)
+
+Además de los reviewers LLM, podés habilitar un nodo **determinístico** que corre un linter
+real por lenguaje sobre los archivos staged (archivo completo). Se configura igual que los
+demás concerns: `review.style` lo prende/apaga y `blocking.style` decide si aborta el commit.
+
+```yaml
+review:
+  style: true
+blocking:
+  style: false          # advisory por defecto; poné true para que bloqueé en medium+
+```
+
+| Lenguaje | Tool default | Alternativas |
+|----------|--------------|--------------|
+| Java | `checkstyle` | `spotbugs`, `pmd` |
+| JavaScript/TypeScript | `eslint` | `biome` |
+| Go | `golangci-lint` | `go vet` |
+| Python | `ruff` | `pylint` |
+| C# | `dotnet-format` | `dotnet build` |
+
+Podés cambiar el tool por lenguaje o deshabilitarlo con `none`:
+
+```yaml
+linters:
+  java: checkstyle
+  javascript: eslint
+  typescript: eslint
+  go: golangci-lint
+  python: ruff
+  csharp: none           # deshabilita el lint de C#
+```
+
+Comportamiento:
+- El linter corre sobre los mismos archivos que revisan los reviewers (los sensibles/ignorados
+  quedan fuera).
+- **Fail-open**: si el tool no está instalado o falla, se saltea con warning en stderr, igual
+  que los reviewers LLM.
+- Severidad: `error→high`, `warning→medium`, `info→low` (en Ruff, `F`/pyflakes → high, resto → medium).
+- Requiere los tools en el `PATH` (o `eslint` en `node_modules`, vía `npx --no-install`).
+
+### Instalar los linters
+
+#### Java — Checkstyle
+Requiere un JRE/JDK ya instalado. El binario `checkstyle`:
+
+```bash
+# macOS
+brew install checkstyle
+# Debian/Ubuntu
+sudo apt install checkstyle
+```
+
+Sin package manager: descargá `checkstyle-*.jar` de https://github.com/checkstyle/checkstyle/releases
+y creá un wrapper `checkstyle` en el `PATH`:
+
+```sh
+#!/bin/sh
+exec java -jar /ruta/checkstyle-10.x.jar "$@"
+```
+
+Corre con la config `sun_checks.xml` por defecto. Verificá: `checkstyle --version`.
+
+#### Go — golangci-lint
+Requiere Go instalado:
+
+```bash
+go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
+```
+
+Asegurate de que `$(go env GOPATH)/bin` esté en tu `PATH`. Verificá: `golangci-lint version`.
+Usa `--out-format json` (soportado en v1.43+ y v2).
+
+#### Node.js (JS/TS) — ESLint
+El nodo corre `npx --no-install eslint`, así que **ESLint debe ser una dependencia local del
+repo que se revisa** (no se descarga solo):
+
+```bash
+# en el repo a revisar
+npm i -D eslint
+# para TypeScript, además:
+npm i -D typescript @typescript-eslint/parser @typescript-eslint/eslint-plugin
+```
+
+Y necesitás un config, si no, no reporta nada. `eslint.config.js` (flat config):
+
+```js
+import ts from "@typescript-eslint/eslint-plugin";
+
+export default [
+  { ignores: ["node_modules", "dist"] },
+  {
+    files: ["**/*.js"],
+    languageOptions: { ecmaVersion: "latest" },
+    rules: { "no-eval": "error", "no-unused-vars": "warn" },
+  },
+  {
+    files: ["**/*.ts"],
+    plugins: { "@typescript-eslint": ts },
+    languageOptions: { parser: ts.parser },
+    rules: { "@typescript-eslint/no-explicit-any": "warn" },
+  },
+];
+```
+
+#### Python — Ruff
+```bash
+pip install ruff        # o: pipx install ruff
+```
+Verificá: `ruff --version`.
+
+#### C# — dotnet format
+Requiere el SDK de .NET:
+```bash
+dotnet format --version
+```
+Ya viene con el SDK; no hace falta instalar nada extra.
 
 ## Config (env vars)
 

@@ -10,9 +10,19 @@ review:                 # qué reviewers corren (en paralelo)
   bugs: true
   architecture: true
   performance: false
+  style: false           # linter determinístico por lenguaje (opt-in)
 
 blocking:               # cuáles pueden abortar el commit (REJECT); el resto es advisory
   security: true
   bugs: true
   architecture: false
   performance: false
+  style: false
+
+linters:                # qué linter corre por lenguaje (defaults recomendados; "none" = deshabilita)
+  java: checkstyle
+  javascript: eslint
+  typescript: eslint
+  go: golangci-lint
+  python: ruff
+  csharp: dotnet-format
